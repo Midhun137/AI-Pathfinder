@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>AI Path Planning Simulator</title>
+
+<link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}">
+
+</head>
+
+<body>
+
+<h1>AI Pathfinding Research Simulator</h1>
+
+<div class="controls">
+
+<select id="algo">
+<option>A*</option>
+<option>Dijkstra</option>
+<option>Greedy</option>
+</select>
+
+<button onclick="generateMaze()">Generate Maze</button>
+<button onclick="solve()">Solve</button>
+<button onclick="location.reload()">Reset</button>
+
+</div>
+
+<div id="grid"></div>
+
+<div id="stats" class="stats"></div>
+
+<script src="{{ url_for('static',filename='script.js') }}"></script>
+
+</body>
+</html>
