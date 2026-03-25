@@ -1,128 +1,142 @@
-const rows=18
-const cols=24
+const ROWS = 18
+const COLS = 24
 
-let maze=[]
-let start=[0,0]
-let goal=[17,23]
+let grid = Array(ROWS).fill().map(()=>Array(COLS).fill(0))
 
-const grid=document.getElementById("grid")
+let start = [4,4]
+let goal = [13,19]
 
-function createGrid(){
+let isDrawing=false
 
-for(let r=0;r<rows;r++){
+function init(){
 
-maze[r]=[]
+const gridDiv = document.getElementById("grid")
 
-for(let c=0;c<cols;c++){
+for(let r=0;r<ROWS;r++){
 
-maze[r][c]=0
+for(let c=0;c<COLS;c++){
 
 let cell=document.createElement("div")
+
 cell.className="cell"
-cell.dataset.r=r
-cell.dataset.c=c
 
-cell.onclick=()=>toggleWall(cell)
+cell.id=`cell-${r}-${c}`
 
-grid.appendChild(cell)
+cell.onmousedown=()=>{
+
+isDrawing=true
+toggleWall(r,c)
+
+}
+
+cell.onmouseover=()=>{
+
+if(isDrawing) toggleWall(r,c)
+
+}
+
+cell.onmouseup=()=>{
+
+isDrawing=false
+
+}
+
+gridDiv.appendChild(cell)
 
 }
 
 }
 
-paint(start,"start")
-paint(goal,"goal")
+updateUI()
+
 }
 
-function toggleWall(cell){
+function toggleWall(r,c){
 
-let r=cell.dataset.r
-let c=cell.dataset.c
+if((r==start[0]&&c==start[1])||(r==goal[0]&&c==goal[1])) return
 
-if((r==start[0] && c==start[1]) || (r==goal[0] && c==goal[1])) return
+grid[r][c]=grid[r][c]==0?1:0
 
-if(maze[r][c]==0){
-maze[r][c]=1
-cell.classList.add("wall")
-}else{
-maze[r][c]=0
-cell.classList.remove("wall")
-}
+document.getElementById(`cell-${r}-${c}`).classList.toggle("wall")
+
 }
 
-function paint(pos,cls){
+function updateUI(){
 
-document.querySelectorAll(".cell").forEach(c=>{
-if(c.dataset.r==pos[0] && c.dataset.c==pos[1])
-c.classList.add(cls)
-})
-}
+document.getElementById(`cell-${start[0]}-${start[1]}`).classList.add("start")
 
-function generateMaze(){
+document.getElementById(`cell-${goal[0]}-${goal[1]}`).classList.add("goal")
 
-document.querySelectorAll(".cell").forEach(c=>{
-
-let r=c.dataset.r
-let col=c.dataset.c
-
-if(Math.random()<0.28){
-
-maze[r][col]=1
-c.classList.add("wall")
-
-}else{
-
-maze[r][col]=0
-c.classList.remove("wall")
-}
-
-})
-
-paint(start,"start")
-paint(goal,"goal")
 }
 
 async function solve(){
 
-let algo=document.getElementById("algo").value
+const algo=document.getElementById("algo").value
 
-let res=await fetch("/solve",{
+const res=await fetch("/solve",{
+
 method:"POST",
 headers:{"Content-Type":"application/json"},
+
 body:JSON.stringify({
-maze:maze,
-start:start,
-goal:goal,
+
+grid,
+start,
+goal,
 algorithm:algo
+
 })
+
 })
 
-let data=await res.json()
+const data=await res.json()
 
-animate(data.visited,"visited")
+document.getElementById("stats").innerText=`Time: ${data.time}`
 
-setTimeout(()=>{
-animate(data.path,"path")
-},500)
-
-document.getElementById("stats").innerText=
-`Algorithm: ${algo} | Nodes: ${data.nodes} | Path Length: ${data.length} | Time: ${data.time}s`
-}
-
-function animate(nodes,cls){
-
-nodes.forEach((n,i)=>{
+data.visited.forEach((n,i)=>{
 
 setTimeout(()=>{
 
-document.querySelectorAll(".cell").forEach(c=>{
-if(c.dataset.r==n[0] && c.dataset.c==n[1])
-c.classList.add(cls)
+let cell=document.getElementById(`cell-${n[0]}-${n[1]}`)
+
+if(!cell.classList.contains("start")&&!cell.classList.contains("goal"))
+
+cell.classList.add("visited")
+
+if(i===data.visited.length-1) animatePath(data.path)
+
+},i*10)
+
 })
 
-},i*15)
-
-})
 }
 
-createGrid()
+function animatePath(path){
+
+path.forEach((n,i)=>{
+
+setTimeout(()=>{
+
+document.getElementById(`cell-${n[0]}-${n[1]}`).classList.add("path")
+
+},i*30)
+
+})
+
+}
+
+function generateMaze(){
+
+for(let r=0;r<ROWS;r++){
+
+for(let c=0;c<COLS;c++){
+
+if(Math.random()<0.25) toggleWall(r,c)
+
+}
+
+}
+
+}
+
+init()
