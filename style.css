@@ -1,58 +1,77 @@
 body{
-background:#F5F5F7;
-font-family:-apple-system,BlinkMacSystemFont;
+
+font-family: Arial;
+background:#f4f4f4;
 text-align:center;
+
 }
 
 h1{
-font-weight:600;
+
 margin-top:20px;
-}
 
-.controls{
-margin:20px;
-}
-
-button{
-background:#0071E3;
-color:white;
-border:none;
-padding:10px 16px;
-border-radius:10px;
-margin:5px;
-cursor:pointer;
-font-size:14px;
-}
-
-button:hover{
-opacity:0.9;
-}
-
-select{
-padding:8px;
-border-radius:8px;
 }
 
 #grid{
+
 display:grid;
-grid-template-columns:repeat(24,32px);
+grid-template-columns:repeat(24,30px);
+gap:3px;
 justify-content:center;
-margin-top:20px;
+margin-top:30px;
+
 }
 
 .cell{
-width:32px;
-height:32px;
-border:1px solid #D2D2D7;
+
+width:30px;
+height:30px;
+background:white;
+border-radius:5px;
+border:1px solid #ddd;
+
 }
 
-.wall{background:#1D1D1F;}
-.start{background:#34C759;}
-.goal{background:#FF3B30;}
-.visited{background:#FFD60A;}
-.path{background:#0A84FF;}
+.wall{
 
-.stats{
-margin-top:15px;
-font-weight:500;
+background:black;
+
+}
+
+.start{
+
+background:green;
+
+}
+
+.goal{
+
+background:red;
+
+}
+
+.visited{
+
+background:#bde0ff;
+
+}
+
+.path{
+
+background:#0077ff;
+
+}
+
+button{
+
+padding:10px;
+margin:10px;
+cursor:pointer;
+
+}
+
+select{
+
+padding:8px;
+
 }
