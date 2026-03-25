@@ -7,100 +7,167 @@ app = Flask(__name__)
 ROWS = 18
 COLS = 24
 
-def heuristic(a,b):
-    return abs(a[0]-b[0]) + abs(a[1]-b[1])
 
-def neighbors(node,maze):
-    r,c=node
-    moves=[(0,1),(1,0),(0,-1),(-1,0)]
+def get_neighbors(node, grid):
 
-    for dr,dc in moves:
-        nr=r+dr
-        nc=c+dc
+    r, c = node
 
-        if 0<=nr<ROWS and 0<=nc<COLS:
-            if maze[nr][nc]==0:
-                yield (nr,nc)
+    directions = [(0,1),(1,0),(0,-1),(-1,0)]
 
-def solve_astar(maze,start,goal,algo):
+    for dr,dc in directions:
 
-    open_list=[]
-    heapq.heappush(open_list,(0,start))
+        nr = r + dr
+        nc = c + dc
 
-    came={}
-    cost={start:0}
-    visited=[]
-    nodes=0
+        if 0 <= nr < ROWS and 0 <= nc < COLS and grid[nr][nc] == 0:
 
-    start_time=time.time()
+            yield (nr,nc)
 
-    while open_list:
-
-        _,current=heapq.heappop(open_list)
-
-        if current in visited:
-            continue
-
-        visited.append(current)
-        nodes+=1
-
-        if current==goal:
-            break
-
-        for nb in neighbors(current,maze):
-
-            new_cost=cost[current]+1
-
-            if nb not in cost or new_cost<cost[nb]:
-
-                cost[nb]=new_cost
-
-                if algo=="A*":
-                    priority=new_cost+heuristic(nb,goal)
-                elif algo=="Dijkstra":
-                    priority=new_cost
-                else:
-                    priority=heuristic(nb,goal)
-
-                heapq.heappush(open_list,(priority,nb))
-                came[nb]=current
-
-    path=[]
-    node=goal
-
-    while node in came:
-        path.append(node)
-        node=came[node]
-
-    path.reverse()
-
-    end=time.time()
-
-    return {
-        "visited":visited,
-        "path":path,
-        "nodes":nodes,
-        "time":round(end-start_time,4),
-        "length":len(path)
-    }
 
 @app.route("/")
 def index():
+
     return render_template("index.html")
 
-@app.route("/solve",methods=["POST"])
+
+@app.route("/solve", methods=["POST"])
 def solve():
 
-    data=request.get_json()
+    data = request.get_json()
 
-    maze=data["maze"]
-    start=tuple(data["start"])
-    goal=tuple(data["goal"])
-    algo=data["algorithm"]
+    grid = data["grid"]
+    start = tuple(data["start"])
+    goal = tuple(data["goal"])
+    algo = data["algorithm"]
 
-    result=solve_astar(maze,start,goal,algo)
+    start_time = time.perf_counter()
 
-    return jsonify(result)
+    visited_order = []
+    came_from = {}
 
-if __name__=="__main__":
+    # ------------------ A STAR ------------------
+
+    if algo == "A*":
+
+        pq = [(0,start)]
+        g_score = {start:0}
+
+        while pq:
+
+            _, curr = heapq.heappop(pq)
+
+            if curr in visited_order:
+                continue
+
+            visited_order.append(curr)
+
+            if curr == goal:
+                break
+
+            for nb in get_neighbors(curr,grid):
+
+                temp = g_score[curr] + 1
+
+                if nb not in g_score or temp < g_score[nb]:
+
+                    g_score[nb] = temp
+
+                    f = temp + abs(nb[0]-goal[0]) + abs(nb[1]-goal[1])
+
+                    heapq.heappush(pq,(f,nb))
+
+                    came_from[nb] = curr
+
+
+    # ------------------ DIJKSTRA ------------------
+
+    elif algo == "Dijkstra":
+
+        pq = [(0,start)]
+        dist = {start:0}
+
+        while pq:
+
+            cost, curr = heapq.heappop(pq)
+
+            if curr in visited_order:
+                continue
+
+            visited_order.append(curr)
+
+            if curr == goal:
+                break
+
+            for nb in get_neighbors(curr,grid):
+
+                new_cost = dist[curr] + 1
+
+                if nb not in dist or new_cost < dist[nb]:
+
+                    dist[nb] = new_cost
+
+                    heapq.heappush(pq,(new_cost,nb))
+
+                    came_from[nb] = curr
+
+
+    # ------------------ GREEDY BFS ------------------
+
+    elif algo == "Greedy":
+
+        pq = [(0,start)]
+        visited = set()
+
+        while pq:
+
+            _, curr = heapq.heappop(pq)
+
+            if curr in visited:
+                continue
+
+            visited.add(curr)
+            visited_order.append(curr)
+
+            if curr == goal:
+                break
+
+            for nb in get_neighbors(curr,grid):
+
+                if nb not in visited:
+
+                    h = abs(nb[0]-goal[0]) + abs(nb[1]-goal[1])
+
+                    heapq.heappush(pq,(h,nb))
+
+                    came_from[nb] = curr
+
+
+    # ------------------ BUILD PATH ------------------
+
+    path = []
+    curr = goal
+
+    while curr in came_from:
+
+        path.append(curr)
+        curr = came_from[curr]
+
+    if path:
+        path.append(start)
+
+    path.reverse()
+
+    runtime = f"{(time.perf_counter()-start_time)*1000:.2f} ms"
+
+    return jsonify({
+
+        "visited": visited_order,
+        "path": path,
+        "time": runtime
+
+    })
+
+
+if __name__ == "__main__":
+
     app.run(debug=True)
